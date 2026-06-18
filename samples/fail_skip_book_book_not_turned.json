@@ -1,0 +1,19 @@
+{
+  "missionType": "skip_book",
+  "captureDurationSec": 5,
+  "sampleFps": 5,
+  "poseFrames": [
+    { "timestamp": 0.0, "landmarks": {
+      "leftShoulder": { "x": 0.42, "y": 0.35, "visibility": 0.97 },
+      "rightShoulder": { "x": 0.58, "y": 0.35, "visibility": 0.97 },
+      "leftWrist": { "x": 0.70, "y": 0.55, "visibility": 0.92 } } },
+    { "timestamp": 1.0, "landmarks": {
+      "leftShoulder": { "x": 0.42, "y": 0.35, "visibility": 0.97 },
+      "rightShoulder": { "x": 0.58, "y": 0.35, "visibility": 0.97 },
+      "leftWrist": { "x": 0.55, "y": 0.50, "visibility": 0.92 } } },
+    { "timestamp": 2.0, "landmarks": {
+      "leftShoulder": { "x": 0.42, "y": 0.35, "visibility": 0.97 },
+      "rightShoulder": { "x": 0.58, "y": 0.35, "visibility": 0.97 },
+      "leftWrist": { "x": 0.40, "y": 0.56, "visibility": 0.92 } } }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "missionType": "protect_swallow",
+  "captureDurationSec": 5,
+  "sampleFps": 5,
+  "poseFrames": [
+    { "timestamp": 0.0, "landmarks": {
+      "leftShoulder": { "x": 0.42, "y": 0.35, "visibility": 0.98 },
+      "rightShoulder": { "x": 0.58, "y": 0.35, "visibility": 0.97 },
+      "leftWrist": { "x": 0.84, "y": 0.50, "visibility": 0.91 },
+      "rightWrist": { "x": 0.86, "y": 0.50, "visibility": 0.91 } } }
+  ]
+}
