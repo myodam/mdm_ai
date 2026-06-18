@@ -39,21 +39,21 @@ def _lm(x, y, v=0.95):
     return {"x": x, "y": y, "visibility": v}
 
 
-# --- skip_book ---
+# --- skip_book (왼손이 오른쪽으로 한 번 곡선 스윕) ---
 def test_skip_book_success():
     frames = [
         {"timestamp": 0.0, "landmarks": {
             "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
-            "rightWrist": _lm(0.70, 0.58)}},
+            "leftWrist": _lm(0.30, 0.55)}},
         {"timestamp": 1.0, "landmarks": {
             "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
-            "rightWrist": _lm(0.62, 0.50)}},
+            "leftWrist": _lm(0.45, 0.50)}},
         {"timestamp": 2.0, "landmarks": {
             "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
-            "rightWrist": _lm(0.48, 0.46)}},
+            "leftWrist": _lm(0.60, 0.50)}},
         {"timestamp": 3.0, "landmarks": {
             "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
-            "rightWrist": _lm(0.38, 0.52)}},
+            "leftWrist": _lm(0.72, 0.56)}},
     ]
     data = _post(_req("skip_book", frames))
     assert data["success"] is True
@@ -62,28 +62,28 @@ def test_skip_book_success():
 
 
 def test_skip_book_fail():
-    # 위아래로만 움직이고 좌우 스윕 없음 → BOOK_NOT_TURNED
+    # 왼쪽 방향으로 이동(오른쪽 도달 부족) → BOOK_NOT_TURNED
     frames = [
         {"timestamp": 0.0, "landmarks": {
             "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
-            "rightWrist": _lm(0.60, 0.40)}},
+            "leftWrist": _lm(0.70, 0.55)}},
         {"timestamp": 1.0, "landmarks": {
             "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
-            "rightWrist": _lm(0.60, 0.60)}},
+            "leftWrist": _lm(0.55, 0.50)}},
         {"timestamp": 2.0, "landmarks": {
             "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
-            "rightWrist": _lm(0.60, 0.40)}},
+            "leftWrist": _lm(0.40, 0.56)}},
     ]
     data = _post(_req("skip_book", frames))
     assert data["success"] is False
     assert data["reasonCode"] == "BOOK_NOT_TURNED"
 
 
-# --- receive_seed ---
+# --- receive_seed (두 손 모아 어깨 위) ---
 def test_receive_seed_success():
     frames = [{"timestamp": 0.0, "landmarks": {
         "leftShoulder": _lm(0.42, 0.36), "rightShoulder": _lm(0.58, 0.36),
-        "leftWrist": _lm(0.40, 0.62), "rightWrist": _lm(0.64, 0.24)}}]
+        "leftWrist": _lm(0.48, 0.24), "rightWrist": _lm(0.52, 0.24)}}]
     data = _post(_req("receive_seed", frames))
     assert data["success"] is True
     assert data["reasonCode"] == "MISSION_SUCCESS"
@@ -91,9 +91,10 @@ def test_receive_seed_success():
 
 
 def test_receive_seed_fail():
+    # 두 손이 어깨 아래 → HAND_NOT_RAISED
     frames = [{"timestamp": 0.0, "landmarks": {
         "leftShoulder": _lm(0.42, 0.36), "rightShoulder": _lm(0.58, 0.36),
-        "leftWrist": _lm(0.40, 0.62), "rightWrist": _lm(0.60, 0.62)}}]
+        "leftWrist": _lm(0.48, 0.62), "rightWrist": _lm(0.52, 0.62)}}]
     data = _post(_req("receive_seed", frames))
     assert data["success"] is False
     assert data["reasonCode"] == "HAND_NOT_RAISED"
@@ -118,23 +119,40 @@ def test_protect_swallow_fail():
     assert data["reasonCode"] == "HANDS_TOO_FAR"
 
 
-# --- open_gourd ---
+# --- open_gourd (박 썰기: 어깨 아래 + 같은 방향 좌우 이동) ---
 def test_open_gourd_success():
-    frames = [{"timestamp": 0.0, "landmarks": {
-        "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
-        "leftWrist": _lm(0.20, 0.46), "rightWrist": _lm(0.80, 0.46)}}]
+    frames = [
+        {"timestamp": 0.0, "landmarks": {
+            "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
+            "leftWrist": _lm(0.30, 0.60), "rightWrist": _lm(0.60, 0.60)}},
+        {"timestamp": 1.0, "landmarks": {
+            "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
+            "leftWrist": _lm(0.48, 0.60), "rightWrist": _lm(0.78, 0.60)}},
+        {"timestamp": 2.0, "landmarks": {
+            "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
+            "leftWrist": _lm(0.30, 0.60), "rightWrist": _lm(0.60, 0.60)}},
+        {"timestamp": 3.0, "landmarks": {
+            "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
+            "leftWrist": _lm(0.48, 0.60), "rightWrist": _lm(0.78, 0.60)}},
+    ]
     data = _post(_req("open_gourd", frames))
     assert data["success"] is True
     assert data["reasonCode"] == "MISSION_SUCCESS"
 
 
 def test_open_gourd_fail():
-    frames = [{"timestamp": 0.0, "landmarks": {
-        "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
-        "leftWrist": _lm(0.48, 0.58), "rightWrist": _lm(0.52, 0.58)}}]
+    # 어깨 아래지만 거의 안 움직임 → MOVEMENT_TOO_SMALL
+    frames = [
+        {"timestamp": 0.0, "landmarks": {
+            "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
+            "leftWrist": _lm(0.30, 0.60), "rightWrist": _lm(0.60, 0.60)}},
+        {"timestamp": 1.0, "landmarks": {
+            "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
+            "leftWrist": _lm(0.31, 0.61), "rightWrist": _lm(0.61, 0.61)}},
+    ]
     data = _post(_req("open_gourd", frames))
     assert data["success"] is False
-    assert data["reasonCode"] == "ARMS_NOT_WIDE"
+    assert data["reasonCode"] == "MOVEMENT_TOO_SMALL"
 
 
 # --- 예외 처리 ---

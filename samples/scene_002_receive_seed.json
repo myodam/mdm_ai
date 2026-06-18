@@ -8,8 +8,8 @@
       "landmarks": {
         "leftShoulder": { "x": 0.42, "y": 0.36, "visibility": 0.97 },
         "rightShoulder": { "x": 0.58, "y": 0.36, "visibility": 0.97 },
-        "leftWrist": { "x": 0.40, "y": 0.62, "visibility": 0.90 },
-        "rightWrist": { "x": 0.64, "y": 0.24, "visibility": 0.92 }
+        "leftWrist": { "x": 0.48, "y": 0.24, "visibility": 0.92 },
+        "rightWrist": { "x": 0.52, "y": 0.24, "visibility": 0.92 }
       }
     }
   ]

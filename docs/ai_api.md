@@ -117,12 +117,14 @@ Landmark:
 |---|---|---|
 | MISSION_SUCCESS | 공통 | 미션 성공 (score ≥ 0.7) |
 | LOW_SCORE | 공통 | 점수 미달 (예약) |
-| BOOK_NOT_TURNED | skip_book | 오른손 좌우 스윕이 부족함 |
-| MOVEMENT_TOO_SMALL | skip_book / open_gourd | 손 전체 이동량이 부족함 |
+| BOOK_NOT_TURNED | skip_book | 왼손이 오른쪽으로 충분히/한 방향으로 안 넘어감(곡선 포함) |
+| MOVEMENT_TOO_SMALL | skip_book / open_gourd | 손 이동량이 부족함 |
 | HANDS_TOO_FAR | protect_swallow | 양손 사이 거리가 멂 |
 | HANDS_NOT_CENTERED | protect_swallow | 양손이 몸 중앙에서 벗어남 |
-| HAND_NOT_RAISED | receive_seed | 손이 충분히 올라가지 않음 |
-| ARMS_NOT_WIDE | open_gourd | 양팔이 충분히 벌어지지 않음 |
+| HAND_NOT_RAISED | receive_seed | 두 손이 충분히 올라가지 않음 |
+| HANDS_NOT_TOGETHER | receive_seed | 두 손이 모이지 않음 |
+| HAND_POSITION_TOO_HIGH | open_gourd | 손이 어깨보다 높음(허리 아래에서 해야 함) |
+| SAWING_MOTION_TOO_SMALL | open_gourd | 같은 방향 좌우(썰기) 움직임이 부족함 |
 
 ## 4. errorCode 목록
 
@@ -148,8 +150,8 @@ Landmark:
 
 ## 5. 장면별 요청 예시
 
-### scene_000 / skip_book (오른손 책 넘기기, 동작형)
-오른손목이 여러 프레임에 걸쳐 좌우로 이동해야 하므로 poseFrame 이 2개 이상 필요합니다.
+### scene_000 / skip_book (왼손으로 책장 오른쪽으로 넘기기, 동작형)
+왼손목(leftWrist)이 여러 프레임에 걸쳐 왼→오른쪽으로 이동해야 하므로 poseFrame 이 2개 이상 필요합니다.
 ```json
 {
   "missionType": "skip_book",
@@ -159,22 +161,23 @@ Landmark:
     { "timestamp": 0.0, "landmarks": {
       "leftShoulder": { "x": 0.42, "y": 0.35, "visibility": 0.97 },
       "rightShoulder": { "x": 0.58, "y": 0.35, "visibility": 0.97 },
-      "rightWrist": { "x": 0.70, "y": 0.58, "visibility": 0.92 } } },
+      "leftWrist": { "x": 0.30, "y": 0.55, "visibility": 0.92 } } },
     { "timestamp": 1.0, "landmarks": {
       "leftShoulder": { "x": 0.42, "y": 0.35, "visibility": 0.97 },
       "rightShoulder": { "x": 0.58, "y": 0.35, "visibility": 0.97 },
-      "rightWrist": { "x": 0.62, "y": 0.50, "visibility": 0.92 } } },
+      "leftWrist": { "x": 0.45, "y": 0.50, "visibility": 0.92 } } },
     { "timestamp": 2.0, "landmarks": {
       "leftShoulder": { "x": 0.42, "y": 0.35, "visibility": 0.97 },
       "rightShoulder": { "x": 0.58, "y": 0.35, "visibility": 0.97 },
-      "rightWrist": { "x": 0.48, "y": 0.46, "visibility": 0.92 } } },
+      "leftWrist": { "x": 0.60, "y": 0.50, "visibility": 0.92 } } },
     { "timestamp": 3.0, "landmarks": {
       "leftShoulder": { "x": 0.42, "y": 0.35, "visibility": 0.97 },
       "rightShoulder": { "x": 0.58, "y": 0.35, "visibility": 0.97 },
-      "rightWrist": { "x": 0.38, "y": 0.52, "visibility": 0.92 } } }
+      "leftWrist": { "x": 0.72, "y": 0.56, "visibility": 0.92 } } }
   ]
 }
 ```
+> 미러링으로 화면 좌→우가 x 감소면 `.env`의 `SKIP_BOOK_DIRECTION_SIGN=-1` 로 둡니다.
 
 ### scene_001 / protect_swallow (두 손 모으기)
 ```json
@@ -192,7 +195,8 @@ Landmark:
 }
 ```
 
-### scene_002 / receive_seed (한 손 들기)
+### scene_002 / receive_seed (두 손 모아 어깨 위로)
+두 손 모두 어깨보다 위 + 두 손이 가까이 모여 있어야 합니다.
 ```json
 {
   "missionType": "receive_seed",
@@ -202,13 +206,14 @@ Landmark:
     { "timestamp": 0.0, "landmarks": {
       "leftShoulder": { "x": 0.42, "y": 0.36, "visibility": 0.97 },
       "rightShoulder": { "x": 0.58, "y": 0.36, "visibility": 0.97 },
-      "leftWrist": { "x": 0.40, "y": 0.62, "visibility": 0.90 },
-      "rightWrist": { "x": 0.64, "y": 0.24, "visibility": 0.92 } } }
+      "leftWrist": { "x": 0.48, "y": 0.24, "visibility": 0.92 },
+      "rightWrist": { "x": 0.52, "y": 0.24, "visibility": 0.92 } } }
   ]
 }
 ```
 
-### scene_003 / open_gourd (양팔 크게 벌리기)
+### scene_003 / open_gourd (박 썰기: 양손 같은 방향 좌우 이동, 동작형)
+양손이 어깨보다 아래에서 함께 좌우로 움직여야 하므로 poseFrame 이 2개 이상 필요합니다.
 ```json
 {
   "missionType": "open_gourd",
@@ -218,8 +223,23 @@ Landmark:
     { "timestamp": 0.0, "landmarks": {
       "leftShoulder": { "x": 0.42, "y": 0.35, "visibility": 0.97 },
       "rightShoulder": { "x": 0.58, "y": 0.35, "visibility": 0.97 },
-      "leftWrist": { "x": 0.20, "y": 0.46, "visibility": 0.91 },
-      "rightWrist": { "x": 0.80, "y": 0.46, "visibility": 0.91 } } }
+      "leftWrist": { "x": 0.30, "y": 0.60, "visibility": 0.92 },
+      "rightWrist": { "x": 0.60, "y": 0.60, "visibility": 0.92 } } },
+    { "timestamp": 1.0, "landmarks": {
+      "leftShoulder": { "x": 0.42, "y": 0.35, "visibility": 0.97 },
+      "rightShoulder": { "x": 0.58, "y": 0.35, "visibility": 0.97 },
+      "leftWrist": { "x": 0.48, "y": 0.60, "visibility": 0.92 },
+      "rightWrist": { "x": 0.78, "y": 0.60, "visibility": 0.92 } } },
+    { "timestamp": 2.0, "landmarks": {
+      "leftShoulder": { "x": 0.42, "y": 0.35, "visibility": 0.97 },
+      "rightShoulder": { "x": 0.58, "y": 0.35, "visibility": 0.97 },
+      "leftWrist": { "x": 0.30, "y": 0.60, "visibility": 0.92 },
+      "rightWrist": { "x": 0.60, "y": 0.60, "visibility": 0.92 } } },
+    { "timestamp": 3.0, "landmarks": {
+      "leftShoulder": { "x": 0.42, "y": 0.35, "visibility": 0.97 },
+      "rightShoulder": { "x": 0.58, "y": 0.35, "visibility": 0.97 },
+      "leftWrist": { "x": 0.48, "y": 0.60, "visibility": 0.92 },
+      "rightWrist": { "x": 0.78, "y": 0.60, "visibility": 0.92 } } }
   ]
 }
 ```
@@ -235,10 +255,15 @@ Landmark:
 | PROTECT_SWALLOW_HAND_DISTANCE_THRESHOLD | 0.18 |
 | PROTECT_SWALLOW_CENTER_DIFF_THRESHOLD | 0.2 |
 | RECEIVE_SEED_HAND_RAISE_MARGIN | 0.05 |
-| OPEN_GOURD_WRIST_WIDTH_RATIO | 1.6 |
-| OPEN_GOURD_MOVEMENT_THRESHOLD | 0.4 |
-| SKIP_BOOK_X_RANGE_THRESHOLD | 0.20 |
-| SKIP_BOOK_MOVEMENT_THRESHOLD | 0.25 |
-| SKIP_BOOK_ARC_THRESHOLD (require_arc 시) | 0.08 |
+| RECEIVE_SEED_HAND_DISTANCE_THRESHOLD | 0.20 |
+| OPEN_GOURD_MOVEMENT_THRESHOLD (손목별) | 0.20 |
+| OPEN_GOURD_X_RANGE_THRESHOLD (손목별) | 0.12 |
+| OPEN_GOURD_CENTER_X_RANGE_THRESHOLD | 0.15 |
+| OPEN_GOURD_SAME_DIRECTION_COUNT | 2 |
+| SKIP_BOOK_NET_X_THRESHOLD | 0.20 |
+| SKIP_BOOK_X_MOVEMENT_THRESHOLD | 0.25 |
+| SKIP_BOOK_DIRECTION_RATIO_THRESHOLD | 0.6 |
+| SKIP_BOOK_ARC_THRESHOLD | 0.05 |
+| SKIP_BOOK_DIRECTION_SIGN (미러링이면 -1) | 1 |
 
 대상 연령(4~7세)을 고려해 기준은 너그럽게 잡았으며, Unity 실제 좌표로 보정합니다.

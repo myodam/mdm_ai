@@ -2,27 +2,26 @@
 
 missionType: skip_book  (참고: 흥부와 놀부 scene_000 — AI 는 missionType 만 사용)
 
-오른손으로 책장을 넘기듯 옆으로 움직였는지를 본다.
-한 순간의 자세(bestFrame)가 아니라, 여러 poseFrame 에 걸친 rightWrist 의
-이동 궤적을 분석하는 동작형 미션이다.
+왼손(leftWrist)으로 책장을 **오른쪽 방향으로 한 번 곡선처럼** 넘기는 동작.
+여러 poseFrame 에 걸친 leftWrist 의 가로 이동 궤적을 분석한다.
 
-판정 항목:
-    xRange    = max(rightWrist.x) - min(rightWrist.x)   # 좌우 스윕 폭
-    movement  = totalMovement(rightWrist over poseFrames) # 전체 이동량
-    yRange    = max(rightWrist.y) - min(rightWrist.y)    # 세로 곡선 (선택)
+판정 항목 (시간순 visible leftWrist 기준):
+    netX          = (마지막.x - 처음.x) * DIRECTION_SIGN   # 오른쪽이면 +
+    totalXMovement= Σ |x[t] - x[t-1]|                      # 총 가로 이동량
+    directionRatio= |netX| / totalXMovement                # 1에 가까울수록 한 방향
+    yRange        = max(y) - min(y)                         # 약간의 곡선(세로 변화)
 
-성공(기본): xRange >= X_RANGE_THRESHOLD AND movement >= MOVEMENT_THRESHOLD
-    → score 가 두 임계값에서 정확히 0.7 이 되도록 매핑하므로 score >= 0.7 과 동치.
+성공: netX≥NET_X AND totalXMovement≥X_MOVE AND directionRatio≥DIR_RATIO AND yRange≥ARC
+    (각 임계값에서 점수가 0.7 이 되도록 매핑 → score≥0.7 과 동치)
 
-require_arc=True 일 때만 yRange >= ARC_THRESHOLD 도 함께 요구(선택). 기본은 False.
-방향(좌/우)은 강제하지 않는다(미러링·화면 방향 이슈).
+미러링 주의: 화면 좌→우가 x 감소면 .env SKIP_BOOK_DIRECTION_SIGN=-1 로 뒤집는다.
 
-errorCode 우선순위:
-    어깨가 어느 프레임에서도 감지되지 않음           -> USER_NOT_DETECTED
-    rightWrist 가 visible 한 프레임이 2개 미만        -> HAND_NOT_VISIBLE
+errorCode:
+    어깨가 어느 프레임에서도 감지 안 됨        -> USER_NOT_DETECTED
+    leftWrist visible 프레임 < 2              -> HAND_NOT_VISIBLE
 실패 reasonCode:
-    전체 이동량 부족  -> MOVEMENT_TOO_SMALL
-    좌우 스윕 부족    -> BOOK_NOT_TURNED
+    총 이동량 부족                            -> MOVEMENT_TOO_SMALL
+    오른쪽 도달/방향/곡선 부족                -> BOOK_NOT_TURNED
 """
 
 from __future__ import annotations
@@ -33,15 +32,15 @@ from typing import Sequence
 from app.core import config, constants
 from app.schemas.mission_schema import MissionCheckResponse
 from app.schemas.pose_schema import PoseFrame
-from app.utils.geometry import calculate_total_movement
 from app.utils.pose_utils import get_landmark, is_visible
 from app.utils.score_utils import clamp_score, is_success
 
 logger = logging.getLogger("ai.detector.skip_book")
 
-_X_SCALE = 1.5
+_NET_SCALE = 1.5
 _MOVE_SCALE = 1.5
-_ARC_SCALE = 2.5
+_DIR_SCALE = 0.5
+_ARC_SCALE = 2.0
 _MIN_VISIBLE_FRAMES = 2
 
 
@@ -49,63 +48,59 @@ def _any_visible(pose_frames: Sequence[PoseFrame], name: str) -> bool:
     return any(is_visible(get_landmark(f, name)) for f in pose_frames)
 
 
-def detect(
-    pose_frames: Sequence[PoseFrame], require_arc: bool = False
-) -> MissionCheckResponse:
+def detect(pose_frames: Sequence[PoseFrame]) -> MissionCheckResponse:
     # 1. 사람 감지 (어깨)
     shoulder_seen = _any_visible(
-        pose_frames, constants.RIGHT_SHOULDER
-    ) or _any_visible(pose_frames, constants.LEFT_SHOULDER)
+        pose_frames, constants.LEFT_SHOULDER
+    ) or _any_visible(pose_frames, constants.RIGHT_SHOULDER)
     if not shoulder_seen:
         return MissionCheckResponse(
             success=False, score=0.0, error_code=constants.ERROR_USER_NOT_DETECTED
         )
 
-    # 2. rightWrist 가 보이는 프레임 모으기
-    wrists = []
+    # 2. 시간순으로 보이는 leftWrist 모으기
+    xs: list[float] = []
+    ys: list[float] = []
     for frame in pose_frames:
-        wrist = get_landmark(frame, constants.RIGHT_WRIST)
+        wrist = get_landmark(frame, constants.LEFT_WRIST)
         if is_visible(wrist):
-            wrists.append(wrist)
-    if len(wrists) < _MIN_VISIBLE_FRAMES:
-        # 궤적을 판단하기에 충분한 프레임이 없음
+            xs.append(wrist.x)
+            ys.append(wrist.y)
+    if len(xs) < _MIN_VISIBLE_FRAMES:
         return MissionCheckResponse(
             success=False, score=0.0, error_code=constants.ERROR_HAND_NOT_VISIBLE
         )
 
     # 3. 지표 계산
-    xs = [w.x for w in wrists]
-    ys = [w.y for w in wrists]
-    x_range = max(xs) - min(xs)
+    net_x = (xs[-1] - xs[0]) * config.SKIP_BOOK_DIRECTION_SIGN
+    total_x_movement = sum(abs(xs[t] - xs[t - 1]) for t in range(1, len(xs)))
+    direction_ratio = abs(net_x) / total_x_movement if total_x_movement > 0 else 0.0
     y_range = max(ys) - min(ys)
-    movement = calculate_total_movement(pose_frames, constants.RIGHT_WRIST)
 
-    # 4. score 매핑 (임계값에서 정확히 0.7)
-    x_score = config.SUCCESS_THRESHOLD + (
-        x_range - config.SKIP_BOOK_X_RANGE_THRESHOLD
-    ) * _X_SCALE
+    # 4. score 매핑 (각 임계값에서 0.7)
+    net_score = config.SUCCESS_THRESHOLD + (
+        net_x - config.SKIP_BOOK_NET_X_THRESHOLD
+    ) * _NET_SCALE
     move_score = config.SUCCESS_THRESHOLD + (
-        movement - config.SKIP_BOOK_MOVEMENT_THRESHOLD
+        total_x_movement - config.SKIP_BOOK_X_MOVEMENT_THRESHOLD
     ) * _MOVE_SCALE
-    components = [x_score, move_score]
-    if require_arc:
-        arc_score = config.SUCCESS_THRESHOLD + (
-            y_range - config.SKIP_BOOK_ARC_THRESHOLD
-        ) * _ARC_SCALE
-        components.append(arc_score)
-    score = clamp_score(min(components))
+    dir_score = config.SUCCESS_THRESHOLD + (
+        direction_ratio - config.SKIP_BOOK_DIRECTION_RATIO_THRESHOLD
+    ) * _DIR_SCALE
+    arc_score = config.SUCCESS_THRESHOLD + (
+        y_range - config.SKIP_BOOK_ARC_THRESHOLD
+    ) * _ARC_SCALE
+    score = clamp_score(min(net_score, move_score, dir_score, arc_score))
 
     logger.debug(
-        "skip_book visibleFrames=%d xRange=%.3f movement=%.3f yRange=%.3f "
-        "xScore=%.2f movementScore=%.2f finalScore=%.2f require_arc=%s",
-        len(wrists),
-        x_range,
-        movement,
+        "skip_book visibleFrames=%d netX=%.3f totalXMovement=%.3f directionRatio=%.2f "
+        "yRange=%.3f score=%.2f",
+        len(xs),
+        net_x,
+        total_x_movement,
+        direction_ratio,
         y_range,
-        x_score,
-        move_score,
         score,
-        require_arc,
     )
 
     if is_success(score):
@@ -113,8 +108,8 @@ def detect(
             success=True, score=score, reason_code=constants.REASON_MISSION_SUCCESS
         )
 
-    # 5. 실패 사유: 전체 이동량 부족 우선, 다음 좌우 스윕 부족
-    if movement < config.SKIP_BOOK_MOVEMENT_THRESHOLD:
+    # 5. 실패 사유: 총 이동량 부족 우선, 그 외(방향/도달/곡선)는 BOOK_NOT_TURNED
+    if total_x_movement < config.SKIP_BOOK_X_MOVEMENT_THRESHOLD:
         reason_code = constants.REASON_MOVEMENT_TOO_SMALL
     else:
         reason_code = constants.REASON_BOOK_NOT_TURNED

@@ -100,10 +100,10 @@ curl http://127.0.0.1:9000/health
 
 | missionType | 장면(참고) | 동작 | 판정 방식 | 실패 reasonCode |
 |---|---|---|---|---|
-| `skip_book` | scene_000 | 오른손 책 넘기기 | 오른손목 좌우 스윕 + 이동량 (동작형) | BOOK_NOT_TURNED, MOVEMENT_TOO_SMALL |
+| `skip_book` | scene_000 | 왼손으로 책장 오른쪽으로 넘기기 | 왼손목 왼→오른쪽 순이동·방향성·곡선 (동작형) | BOOK_NOT_TURNED, MOVEMENT_TOO_SMALL |
 | `protect_swallow` | scene_001 | 두 손 모으기 | 양손목 거리 + 몸 중앙 위치 (bestFrame) | HANDS_TOO_FAR, HANDS_NOT_CENTERED |
-| `receive_seed` | scene_002 | 한 손 들기 | 손목이 어깨보다 위 (bestFrame) | HAND_NOT_RAISED |
-| `open_gourd` | scene_003 | 양팔 크게 벌리기 | 어깨폭 대비 손목폭 (+선택 움직임) | ARMS_NOT_WIDE, MOVEMENT_TOO_SMALL |
+| `receive_seed` | scene_002 | 두 손 모아 어깨 위로 | 양손 어깨 위 + 손 사이 거리 (bestFrame) | HAND_NOT_RAISED, HANDS_NOT_TOGETHER |
+| `open_gourd` | scene_003 | 박 썰기(양손 같은 방향 좌우 이동) | 어깨 아래 + 양손 이동/중심이동/같은방향 (동작형) | HAND_POSITION_TOO_HIGH, MOVEMENT_TOO_SMALL, SAWING_MOTION_TOO_SMALL |
 
 공통 성공 기준: `score >= 0.7` → `reasonCode = MISSION_SUCCESS`.
 

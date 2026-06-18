@@ -8,8 +8,35 @@
       "landmarks": {
         "leftShoulder": { "x": 0.42, "y": 0.35, "visibility": 0.97 },
         "rightShoulder": { "x": 0.58, "y": 0.35, "visibility": 0.97 },
-        "leftWrist": { "x": 0.20, "y": 0.46, "visibility": 0.91 },
-        "rightWrist": { "x": 0.80, "y": 0.46, "visibility": 0.91 }
+        "leftWrist": { "x": 0.30, "y": 0.60, "visibility": 0.92 },
+        "rightWrist": { "x": 0.60, "y": 0.60, "visibility": 0.92 }
+      }
+    },
+    {
+      "timestamp": 1.0,
+      "landmarks": {
+        "leftShoulder": { "x": 0.42, "y": 0.35, "visibility": 0.97 },
+        "rightShoulder": { "x": 0.58, "y": 0.35, "visibility": 0.97 },
+        "leftWrist": { "x": 0.48, "y": 0.60, "visibility": 0.92 },
+        "rightWrist": { "x": 0.78, "y": 0.60, "visibility": 0.92 }
+      }
+    },
+    {
+      "timestamp": 2.0,
+      "landmarks": {
+        "leftShoulder": { "x": 0.42, "y": 0.35, "visibility": 0.97 },
+        "rightShoulder": { "x": 0.58, "y": 0.35, "visibility": 0.97 },
+        "leftWrist": { "x": 0.30, "y": 0.60, "visibility": 0.92 },
+        "rightWrist": { "x": 0.60, "y": 0.60, "visibility": 0.92 }
+      }
+    },
+    {
+      "timestamp": 3.0,
+      "landmarks": {
+        "leftShoulder": { "x": 0.42, "y": 0.35, "visibility": 0.97 },
+        "rightShoulder": { "x": 0.58, "y": 0.35, "visibility": 0.97 },
+        "leftWrist": { "x": 0.48, "y": 0.60, "visibility": 0.92 },
+        "rightWrist": { "x": 0.78, "y": 0.60, "visibility": 0.92 }
       }
     }
   ]

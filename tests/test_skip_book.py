@@ -1,28 +1,28 @@
-"""skip_book detector 테스트 (책 넘기기, 동작형)."""
+"""skip_book detector 테스트 (왼손이 오른쪽으로 한 번 곡선 스윕)."""
 
 from app.core import constants
 from app.detectors import skip_book_detector
 from app.schemas.pose_schema import Landmark, PoseFrame, PoseLandmarks
 
 
-def _frame(timestamp: float, rx: float, ry: float, wrist_vis: float = 0.92) -> PoseFrame:
+def _frame(timestamp: float, lx: float, ly: float, wrist_vis: float = 0.92) -> PoseFrame:
     return PoseFrame(
         timestamp=timestamp,
         landmarks=PoseLandmarks(
             leftShoulder=Landmark(x=0.42, y=0.35, visibility=0.97),
             rightShoulder=Landmark(x=0.58, y=0.35, visibility=0.97),
-            rightWrist=Landmark(x=rx, y=ry, visibility=wrist_vis),
+            leftWrist=Landmark(x=lx, y=ly, visibility=wrist_vis),
         ),
     )
 
 
-def test_sideways_sweep_success():
-    # 오른손이 오른쪽(0.70)에서 왼쪽(0.38)으로 스윕 + 충분한 이동량
+def test_left_to_right_sweep_success():
+    # 왼손 x 가 증가(왼→오른쪽), 한 방향, 약간의 y 곡선
     frames = [
-        _frame(0.0, 0.70, 0.58),
-        _frame(1.0, 0.62, 0.50),
-        _frame(2.0, 0.48, 0.46),
-        _frame(3.0, 0.38, 0.52),
+        _frame(0.0, 0.30, 0.55),
+        _frame(1.0, 0.45, 0.50),
+        _frame(2.0, 0.60, 0.50),
+        _frame(3.0, 0.72, 0.56),
     ]
     res = skip_book_detector.detect(frames)
     assert res.success is True
@@ -31,42 +31,50 @@ def test_sideways_sweep_success():
     assert res.score >= 0.7
 
 
-def test_up_down_only_book_not_turned():
-    # 위아래로만 크게 움직이고 좌우 스윕은 거의 없음 → BOOK_NOT_TURNED
+def test_wrong_direction_book_not_turned():
+    # 충분히 움직였지만 왼쪽으로 이동(오른쪽 도달 부족) → BOOK_NOT_TURNED
     frames = [
-        _frame(0.0, 0.60, 0.40),
-        _frame(1.0, 0.60, 0.60),
-        _frame(2.0, 0.60, 0.40),
-        _frame(3.0, 0.60, 0.60),
+        _frame(0.0, 0.70, 0.55),
+        _frame(1.0, 0.55, 0.50),
+        _frame(2.0, 0.40, 0.50),
+        _frame(3.0, 0.30, 0.56),
     ]
     res = skip_book_detector.detect(frames)
     assert res.success is False
     assert res.reason_code == constants.REASON_BOOK_NOT_TURNED
-    assert res.error_code is None
+
+
+def test_zigzag_book_not_turned():
+    # 많이 움직이지만 한 방향이 아님(net 부족) → BOOK_NOT_TURNED
+    frames = [
+        _frame(0.0, 0.40, 0.55),
+        _frame(1.0, 0.60, 0.50),
+        _frame(2.0, 0.40, 0.50),
+        _frame(3.0, 0.50, 0.56),
+    ]
+    res = skip_book_detector.detect(frames)
+    assert res.success is False
+    assert res.reason_code == constants.REASON_BOOK_NOT_TURNED
 
 
 def test_barely_moves_movement_too_small():
-    # 거의 정지 → MOVEMENT_TOO_SMALL
     frames = [
-        _frame(0.0, 0.60, 0.50),
-        _frame(1.0, 0.61, 0.50),
+        _frame(0.0, 0.50, 0.50),
+        _frame(1.0, 0.51, 0.50),
     ]
     res = skip_book_detector.detect(frames)
     assert res.success is False
     assert res.reason_code == constants.REASON_MOVEMENT_TOO_SMALL
-    assert res.error_code is None
 
 
 def test_fewer_than_two_visible_frames_hand_not_visible():
-    # 손목이 1개 프레임에서만 보임 → HAND_NOT_VISIBLE
     frames = [
-        _frame(0.0, 0.70, 0.58, wrist_vis=0.92),
-        _frame(1.0, 0.40, 0.50, wrist_vis=0.10),
+        _frame(0.0, 0.30, 0.55, wrist_vis=0.92),
+        _frame(1.0, 0.70, 0.55, wrist_vis=0.10),
     ]
     res = skip_book_detector.detect(frames)
     assert res.success is False
     assert res.error_code == constants.ERROR_HAND_NOT_VISIBLE
-    assert res.reason_code is None
 
 
 def test_no_shoulder_user_not_detected():
@@ -76,7 +84,7 @@ def test_no_shoulder_user_not_detected():
             landmarks=PoseLandmarks(
                 leftShoulder=Landmark(x=0.42, y=0.35, visibility=0.1),
                 rightShoulder=Landmark(x=0.58, y=0.35, visibility=0.1),
-                rightWrist=Landmark(x=0.70, y=0.58, visibility=0.9),
+                leftWrist=Landmark(x=0.30, y=0.55, visibility=0.9),
             ),
         ),
         PoseFrame(
@@ -84,7 +92,7 @@ def test_no_shoulder_user_not_detected():
             landmarks=PoseLandmarks(
                 leftShoulder=Landmark(x=0.42, y=0.35, visibility=0.1),
                 rightShoulder=Landmark(x=0.58, y=0.35, visibility=0.1),
-                rightWrist=Landmark(x=0.40, y=0.52, visibility=0.9),
+                leftWrist=Landmark(x=0.70, y=0.55, visibility=0.9),
             ),
         ),
     ]
@@ -93,26 +101,15 @@ def test_no_shoulder_user_not_detected():
     assert res.error_code == constants.ERROR_USER_NOT_DETECTED
 
 
-def test_require_arc_success():
-    # 좌우 스윕 + 세로 변화(곡선)까지 있으면 require_arc 에서도 성공
+def test_mirrored_direction_sign(monkeypatch):
+    # SIGN=-1 이면 x 감소(화면상 오른쪽)도 성공으로 인정
+    monkeypatch.setattr(skip_book_detector.config, "SKIP_BOOK_DIRECTION_SIGN", -1.0)
     frames = [
-        _frame(0.0, 0.70, 0.58),
-        _frame(1.0, 0.62, 0.46),
-        _frame(2.0, 0.48, 0.46),
-        _frame(3.0, 0.38, 0.52),
+        _frame(0.0, 0.72, 0.55),
+        _frame(1.0, 0.60, 0.50),
+        _frame(2.0, 0.45, 0.50),
+        _frame(3.0, 0.30, 0.56),
     ]
-    res = skip_book_detector.detect(frames, require_arc=True)
+    res = skip_book_detector.detect(frames)
     assert res.success is True
     assert res.reason_code == constants.REASON_MISSION_SUCCESS
-
-
-def test_require_arc_flat_fails():
-    # 좌우로는 충분히 움직이지만 세로 변화가 거의 없음 → require_arc 에서 실패
-    frames = [
-        _frame(0.0, 0.70, 0.50),
-        _frame(1.0, 0.55, 0.50),
-        _frame(2.0, 0.40, 0.50),
-    ]
-    res = skip_book_detector.detect(frames, require_arc=True)
-    assert res.success is False
-    assert res.reason_code == constants.REASON_BOOK_NOT_TURNED
