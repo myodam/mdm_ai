@@ -52,3 +52,11 @@ OPEN_GOURD_WRIST_WIDTH_RATIO: float = _get_float("OPEN_GOURD_WRIST_WIDTH_RATIO",
 OPEN_GOURD_MOVEMENT_THRESHOLD: float = _get_float(
     "OPEN_GOURD_MOVEMENT_THRESHOLD", 0.4
 )
+
+# Scene 0. skip_book (책 넘기기, 동작형)
+SKIP_BOOK_X_RANGE_THRESHOLD: float = _get_float("SKIP_BOOK_X_RANGE_THRESHOLD", 0.20)
+SKIP_BOOK_MOVEMENT_THRESHOLD: float = _get_float(
+    "SKIP_BOOK_MOVEMENT_THRESHOLD", 0.25
+)
+# require_arc=True 일 때만 사용하는 세로 곡선 임계값 (선택)
+SKIP_BOOK_ARC_THRESHOLD: float = _get_float("SKIP_BOOK_ARC_THRESHOLD", 0.08)

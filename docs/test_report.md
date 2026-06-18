@@ -26,14 +26,17 @@ uv run pytest tests/test_receive_seed.py -v   # 개별
 
 | 구분 | 값 |
 |---|---|
-| 전체 테스트 | **42** |
-| 통과 | **42** |
+| 전체 테스트 | **50** |
+| 통과 | **50** |
 | 실패 | **0** |
 | 경고 | 1 (StarletteDeprecationWarning — TestClient/httpx, 동작 무관) |
 
 ```
-======================== 42 passed, 1 warning in 0.19s =========================
+======================== 50 passed, 1 warning in 0.16s =========================
 ```
+
+> 변경 이력: 요청 스펙 단순화(storyId/sceneId 제거)로 불일치 테스트 1건 삭제(42→41).
+> 이후 skip_book 미션 추가로 detector 테스트 7 + 통합 테스트 2 추가(41→50).
 
 ## 4. 테스트 케이스 목록 / 결과
 
@@ -41,7 +44,7 @@ uv run pytest tests/test_receive_seed.py -v   # 개별
 | 케이스 | 결과 |
 |---|---|
 | 정상 요청 통과 + camelCase→snake_case 매핑 | PASS |
-| 필수 필드(sceneId) 누락 → ValidationError | PASS |
+| 필수 필드(missionType) 누락 → ValidationError | PASS |
 | poseFrames 누락 → ValidationError | PASS |
 | 응답 camelCase 직렬화 + 금지필드 미포함 | PASS |
 | 예외(errorCode) 응답 형태 | PASS |
@@ -58,6 +61,17 @@ uv run pytest tests/test_receive_seed.py -v   # 개별
 | find_best_frame 빈 입력 | PASS |
 | clamp_score | PASS |
 | is_success | PASS |
+
+### tests/test_skip_book.py (7) — scene_000 (책 넘기기, 동작형)
+| 케이스 | 기대 | 결과 |
+|---|---|---|
+| 오른손 좌우 스윕 | MISSION_SUCCESS | PASS |
+| 위아래로만 움직임 | BOOK_NOT_TURNED | PASS |
+| 거의 정지 | MOVEMENT_TOO_SMALL | PASS |
+| visible 손목 < 2프레임 | HAND_NOT_VISIBLE | PASS |
+| 어깨 미감지 | USER_NOT_DETECTED | PASS |
+| require_arc + 곡선 있음 | MISSION_SUCCESS | PASS |
+| require_arc + 평평한 스윕 | BOOK_NOT_TURNED | PASS |
 
 ### tests/test_receive_seed.py (5) — scene_002
 | 케이스 | 기대 | 결과 |
@@ -88,9 +102,11 @@ uv run pytest tests/test_receive_seed.py -v   # 개별
 | 손목 visibility 낮음 | HAND_NOT_VISIBLE | PASS |
 | bestFrame(앞 실패→나중 양팔 벌림) | MISSION_SUCCESS | PASS |
 
-### tests/test_integration_api.py (11) — API 레벨 통합
+### tests/test_integration_api.py (12) — API 레벨 통합
 | 케이스 | 기대 | 결과 |
 |---|---|---|
+| skip_book 성공 | MISSION_SUCCESS | PASS |
+| skip_book 실패 | BOOK_NOT_TURNED | PASS |
 | receive_seed 성공 | MISSION_SUCCESS | PASS |
 | receive_seed 실패 | HAND_NOT_RAISED | PASS |
 | protect_swallow 성공 | MISSION_SUCCESS | PASS |
@@ -99,8 +115,7 @@ uv run pytest tests/test_receive_seed.py -v   # 개별
 | open_gourd 실패 | ARMS_NOT_WIDE | PASS |
 | poseFrames 빈 배열 | INVALID_POSE_DATA | PASS |
 | 필수 landmark(손목) 누락 | HAND_NOT_VISIBLE | PASS |
-| missionType 불일치 | MISSION_MISMATCH | PASS |
-| 알 수 없는 missionType | MISSION_MISMATCH | PASS |
+| 알 수 없는 missionType | UNKNOWN_MISSION_TYPE | PASS |
 | 응답 4개 필드만(금지필드 미포함) | 전 케이스 단언 | PASS |
 | GET /health | status ok | PASS |
 

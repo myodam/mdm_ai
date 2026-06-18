@@ -13,7 +13,7 @@ Unity → Backend → AI Server(FastAPI) → Backend → Unity
 ## 1. AI 서버 역할
 
 - 백엔드가 내부적으로 호출하는 동작 판정 전용 서버
-- 입력: `storyId / sceneId / missionType / poseFrames`
+- 입력: `missionType / poseFrames` (storyId / sceneId 는 받지 않음 — scene 매핑/검증은 백엔드 책임)
 - 출력: **`success / score / reasonCode / errorCode` 4개 필드만**
 - `missionType` 에 맞는 detector 를 선택해 좌표 기반 룰 판정 수행
 
@@ -62,8 +62,6 @@ curl http://127.0.0.1:8001/health
 요청 (Backend → AI):
 ```json
 {
-  "storyId": "heungbu_nolbu",
-  "sceneId": "scene_002",
   "missionType": "receive_seed",
   "captureDurationSec": 5,
   "sampleFps": 5,
@@ -98,8 +96,11 @@ curl http://127.0.0.1:8001/health
 
 ## 5. detector 목록
 
-| missionType | sceneId | 동작 | 판정 방식 | 실패 reasonCode |
+> AI 서버는 `missionType` 으로만 detector 를 선택합니다. 아래 장면(참고) 칸은 백엔드 기준 매핑이며 AI 요청에는 포함되지 않습니다.
+
+| missionType | 장면(참고) | 동작 | 판정 방식 | 실패 reasonCode |
 |---|---|---|---|---|
+| `skip_book` | scene_000 | 오른손 책 넘기기 | 오른손목 좌우 스윕 + 이동량 (동작형) | BOOK_NOT_TURNED, MOVEMENT_TOO_SMALL |
 | `protect_swallow` | scene_001 | 두 손 모으기 | 양손목 거리 + 몸 중앙 위치 (bestFrame) | HANDS_TOO_FAR, HANDS_NOT_CENTERED |
 | `receive_seed` | scene_002 | 한 손 들기 | 손목이 어깨보다 위 (bestFrame) | HAND_NOT_RAISED |
 | `open_gourd` | scene_003 | 양팔 크게 벌리기 | 어깨폭 대비 손목폭 (+선택 움직임) | ARMS_NOT_WIDE, MOVEMENT_TOO_SMALL |
@@ -136,13 +137,15 @@ uv run pytest -v         # 상세
 uv run pytest tests/test_receive_seed.py -v   # 개별 detector
 ```
 
-**서버 통신 테스트 (팀원용)**
+**서버 통신 테스트 (스웨거 / 고정 JSON)**
 ```bash
-# 터미널 A: 서버 켜기
+# 서버 켜기
 uv run uvicorn app.main:app --reload --port 9000
-# 터미널 B: 요청 보내보기
-bash scripts/test_api.sh
+# 브라우저에서 http://127.0.0.1:9000/docs 접속 후 samples/*.json 복붙
+# 또는 curl 로 파일 전송:
+curl -X POST http://127.0.0.1:9000/internal/ai/missions/check \
+  -H "Content-Type: application/json" -d @samples/scene_002_receive_seed.json
 ```
 
-- 통신 테스트 상세 가이드: [docs/testing_guide.md](docs/testing_guide.md)
+- 통신 테스트 빠른 시작 + 고정 샘플: [samples/README.md](samples/README.md)
 - 자동 테스트 결과 리포트: [docs/test_report.md](docs/test_report.md)

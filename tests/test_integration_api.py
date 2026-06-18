@@ -39,6 +39,46 @@ def _lm(x, y, v=0.95):
     return {"x": x, "y": y, "visibility": v}
 
 
+# --- skip_book ---
+def test_skip_book_success():
+    frames = [
+        {"timestamp": 0.0, "landmarks": {
+            "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
+            "rightWrist": _lm(0.70, 0.58)}},
+        {"timestamp": 1.0, "landmarks": {
+            "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
+            "rightWrist": _lm(0.62, 0.50)}},
+        {"timestamp": 2.0, "landmarks": {
+            "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
+            "rightWrist": _lm(0.48, 0.46)}},
+        {"timestamp": 3.0, "landmarks": {
+            "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
+            "rightWrist": _lm(0.38, 0.52)}},
+    ]
+    data = _post(_req("skip_book", frames))
+    assert data["success"] is True
+    assert data["reasonCode"] == "MISSION_SUCCESS"
+    assert data["errorCode"] is None
+
+
+def test_skip_book_fail():
+    # 위아래로만 움직이고 좌우 스윕 없음 → BOOK_NOT_TURNED
+    frames = [
+        {"timestamp": 0.0, "landmarks": {
+            "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
+            "rightWrist": _lm(0.60, 0.40)}},
+        {"timestamp": 1.0, "landmarks": {
+            "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
+            "rightWrist": _lm(0.60, 0.60)}},
+        {"timestamp": 2.0, "landmarks": {
+            "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
+            "rightWrist": _lm(0.60, 0.40)}},
+    ]
+    data = _post(_req("skip_book", frames))
+    assert data["success"] is False
+    assert data["reasonCode"] == "BOOK_NOT_TURNED"
+
+
 # --- receive_seed ---
 def test_receive_seed_success():
     frames = [{"timestamp": 0.0, "landmarks": {

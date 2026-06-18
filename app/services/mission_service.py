@@ -19,6 +19,7 @@ from app.detectors import (
     open_gourd_detector,
     protect_swallow_detector,
     receive_seed_detector,
+    skip_book_detector,
 )
 from app.schemas.mission_schema import MissionCheckRequest, MissionCheckResponse
 from app.schemas.pose_schema import PoseFrame
@@ -27,6 +28,7 @@ from app.schemas.pose_schema import PoseFrame
 DetectFn = Callable[[Sequence[PoseFrame]], MissionCheckResponse]
 
 DETECTOR_REGISTRY: dict[str, DetectFn] = {
+    constants.MISSION_SKIP_BOOK: skip_book_detector.detect,
     constants.MISSION_PROTECT_SWALLOW: protect_swallow_detector.detect,
     constants.MISSION_RECEIVE_SEED: receive_seed_detector.detect,
     constants.MISSION_OPEN_GOURD: open_gourd_detector.detect,
