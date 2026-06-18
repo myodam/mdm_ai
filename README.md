@@ -35,10 +35,10 @@ Unity → Backend → AI Server(FastAPI) → Backend → Unity
 uv sync
 
 # 개발 서버 실행
-uv run uvicorn app.main:app --reload --port 8001
+uv run uvicorn app.main:app --reload --port 9000
 
 # 헬스체크
-curl http://127.0.0.1:8001/health
+curl http://127.0.0.1:9000/health
 # → {"status":"ok","service":"ai-server"}
 ```
 
@@ -117,10 +117,10 @@ MDM_AI/
 │   ├── main.py                 # FastAPI 진입점, /health, CORS, 라우터 등록
 │   ├── api/mission_router.py   # POST /internal/ai/missions/check
 │   ├── schemas/                # pose_schema, mission_schema (camel↔snake alias)
-│   ├── services/mission_service.py  # missionType → detector 분기, 방어적 검증
-│   ├── detectors/              # protect_swallow / receive_seed / open_gourd
+│   ├── services/mission_service.py  # missionType → detector 분기 (없으면 UNKNOWN_MISSION_TYPE)
+│   ├── detectors/              # skip_book / protect_swallow / receive_seed / open_gourd
 │   ├── utils/                  # geometry, pose_utils, score_utils
-│   ├── core/                   # config(threshold), constants(코드/매핑)
+│   ├── core/                   # config(threshold), constants(미션/reason/error 코드)
 │   └── exceptions/             # mission_exception
 ├── tests/                      # detector별 + schema/utils + 통합 테스트
 └── docs/                       # 기획 문서, ai_api.md, test_report.md

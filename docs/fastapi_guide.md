@@ -188,18 +188,18 @@ def check_mission(request):
 ## 8. 서버 실행과 자동 문서
 
 ```bash
-uv run uvicorn app.main:app --reload --port 8001
+uv run uvicorn app.main:app --reload --port 9000
 ```
 
 - `uvicorn`: ASGI 서버 (FastAPI 앱을 실제로 구동)
 - `app.main:app`: 구동할 객체 위치
 - `--reload`: 코드 저장 시 자동 재시작 (개발용, 운영에선 끔)
-- `--port 8001`: 포트 (`.env` 의 `APP_PORT` 와 동일)
+- `--port 9000`: 포트 (`.env` 의 `APP_PORT` 와 동일)
 
 켠 뒤:
-- `http://127.0.0.1:8001/health` — 헬스체크
-- `http://127.0.0.1:8001/docs` — Swagger UI. schema 가 자동 반영되어 브라우저에서 바로 요청 테스트 가능
-- `http://127.0.0.1:8001/openapi.json` — 기계가 읽는 API 스펙
+- `http://127.0.0.1:9000/health` — 헬스체크
+- `http://127.0.0.1:9000/docs` — Swagger UI. schema 가 자동 반영되어 브라우저에서 바로 요청 테스트 가능
+- `http://127.0.0.1:9000/openapi.json` — 기계가 읽는 API 스펙
 
 ---
 
