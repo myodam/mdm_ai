@@ -16,23 +16,9 @@ def _get_float(key: str, default: float) -> float:
         return default
 
 
-def _get_int(key: str, default: int) -> int:
-    raw = os.getenv(key)
-    if raw is None or raw == "":
-        return default
-    try:
-        return int(raw)
-    except ValueError:
-        return default
-
-
 # 공통 성공/가시성 임계값
 SUCCESS_THRESHOLD: float = _get_float("SUCCESS_THRESHOLD", 0.7)
 VISIBILITY_THRESHOLD: float = _get_float("VISIBILITY_THRESHOLD", 0.6)
-
-# 기본 수집 설정
-DEFAULT_CAPTURE_DURATION_SEC: int = _get_int("DEFAULT_CAPTURE_DURATION_SEC", 5)
-DEFAULT_SAMPLE_FPS: int = _get_int("DEFAULT_SAMPLE_FPS", 5)
 
 # Scene 1. protect_swallow
 PROTECT_SWALLOW_HAND_DISTANCE_THRESHOLD: float = _get_float(
