@@ -117,7 +117,7 @@ Landmark:
 |---|---|---|
 | MISSION_SUCCESS | 공통 | 미션 성공 (score ≥ 0.7) |
 | LOW_SCORE | 공통 | 점수 미달 (예약) |
-| BOOK_NOT_TURNED | skip_book | 왼손이 오른쪽으로 충분히/한 방향으로 안 넘어감(곡선 포함) |
+| BOOK_NOT_TURNED | skip_book | (선택된 손의) 좌우 이동 폭이 부족함 |
 | MOVEMENT_TOO_SMALL | skip_book / open_gourd | 손 이동량이 부족함 |
 | HANDS_TOO_FAR | protect_swallow | 양손 사이 거리가 멂 |
 | HANDS_NOT_CENTERED | protect_swallow | 양손이 몸 중앙에서 벗어남 |
@@ -150,8 +150,8 @@ Landmark:
 
 ## 5. 장면별 요청 예시
 
-### scene_000 / skip_book (왼손으로 책장 오른쪽으로 넘기기, 동작형)
-왼손목(leftWrist)이 여러 프레임에 걸쳐 왼→오른쪽으로 이동해야 하므로 poseFrame 이 2개 이상 필요합니다.
+### scene_000 / skip_book (한 손으로 책장 넘기기, 동작형)
+양손 중 **좌우로 더 크게 움직인 손**을 자동 선택해 판정합니다(왼손 고정 X, 방향 비강제 — 미러링/라벨 스왑 대응). 손목이 여러 프레임에 걸쳐 좌우로 이동해야 하므로 poseFrame 이 2개 이상 필요합니다. 아래는 왼손 예시.
 ```json
 {
   "missionType": "skip_book",
@@ -177,7 +177,7 @@ Landmark:
   ]
 }
 ```
-> 미러링으로 화면 좌→우가 x 감소면 `.env`의 `SKIP_BOOK_DIRECTION_SIGN=-1` 로 둡니다.
+> 방향을 강제하지 않으므로 x 증가/감소 어느 쪽이든, 또 왼손/오른손 어느 쪽이든 좌우로 충분히 움직이면 인정됩니다. (`SKIP_BOOK_DIRECTION_SIGN` 은 추후 방향을 다시 강제할 때를 위한 예약 옵션)
 
 ### scene_001 / protect_swallow (두 손 모으기)
 ```json
@@ -260,10 +260,9 @@ Landmark:
 | OPEN_GOURD_X_RANGE_THRESHOLD (손목별) | 0.12 |
 | OPEN_GOURD_CENTER_X_RANGE_THRESHOLD | 0.15 |
 | OPEN_GOURD_SAME_DIRECTION_COUNT | 2 |
-| SKIP_BOOK_NET_X_THRESHOLD | 0.20 |
-| SKIP_BOOK_X_MOVEMENT_THRESHOLD | 0.25 |
-| SKIP_BOOK_DIRECTION_RATIO_THRESHOLD | 0.6 |
-| SKIP_BOOK_ARC_THRESHOLD | 0.05 |
-| SKIP_BOOK_DIRECTION_SIGN (미러링이면 -1) | 1 |
+| SKIP_BOOK_X_RANGE_THRESHOLD (선택손 좌우폭) | 0.12 |
+| SKIP_BOOK_MOVEMENT_THRESHOLD (선택손 이동량) | 0.15 |
+| SKIP_BOOK_ARC_THRESHOLD (yRange, 보조 가점만) | 0.03 |
+| SKIP_BOOK_DIRECTION_SIGN (예약, 현재 미사용) | 1 |
 
 대상 연령(4~7세)을 고려해 기준은 너그럽게 잡았으며, Unity 실제 좌표로 보정합니다.

@@ -27,7 +27,7 @@ curl -X POST http://127.0.0.1:9000/internal/ai/missions/check \
 
 | 파일 | 장면 | 기대 응답 |
 |---|---|---|
-| `scene_000_skip_book.json` | 왼손으로 책장 오른쪽으로 넘기기 | `success: true`, `reasonCode: "MISSION_SUCCESS"` |
+| `scene_000_skip_book.json` | 한 손으로 책장 넘기기(좌우 쓸기, 방향 무관) | `success: true`, `reasonCode: "MISSION_SUCCESS"` |
 | `scene_001_protect_swallow.json` | 두 손 모으기 | `success: true`, `reasonCode: "MISSION_SUCCESS"` |
 | `scene_002_receive_seed.json` | 두 손 모아 어깨 위로 | `success: true`, `reasonCode: "MISSION_SUCCESS"` |
 | `scene_003_open_gourd.json` | 박 썰기(양손 같은 방향 좌우) | `success: true`, `reasonCode: "MISSION_SUCCESS"` |
@@ -91,7 +91,7 @@ curl -X POST http://127.0.0.1:9000/internal/ai/missions/check \
 ```
 
 > 백엔드 메시지 매핑 참고:
-> - `BOOK_NOT_TURNED` → "왼손으로 책장을 오른쪽으로 넘겨주세요."
+> - `BOOK_NOT_TURNED` → "손으로 책장을 넘기듯이 옆으로 크게 움직여주세요."
 > - `MOVEMENT_TOO_SMALL` → "손을 조금 더 크게 움직여주세요."
 > - `HAND_NOT_RAISED` → "두 손을 어깨보다 높게 들어주세요."
 > - `HANDS_NOT_TOGETHER` → "두 손을 모아서 씨앗을 받아주세요."

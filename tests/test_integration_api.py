@@ -39,7 +39,7 @@ def _lm(x, y, v=0.95):
     return {"x": x, "y": y, "visibility": v}
 
 
-# --- skip_book (왼손이 오른쪽으로 한 번 곡선 스윕) ---
+# --- skip_book (양손 중 더 크게 움직인 손이 좌우로 쓸기, 방향 비강제) ---
 def test_skip_book_success():
     frames = [
         {"timestamp": 0.0, "landmarks": {
@@ -62,21 +62,18 @@ def test_skip_book_success():
 
 
 def test_skip_book_fail():
-    # 왼쪽 방향으로 이동(오른쪽 도달 부족) → BOOK_NOT_TURNED
+    # 손이 거의 안 움직임 → MOVEMENT_TOO_SMALL
     frames = [
         {"timestamp": 0.0, "landmarks": {
             "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
-            "leftWrist": _lm(0.70, 0.55)}},
+            "leftWrist": _lm(0.50, 0.55), "rightWrist": _lm(0.55, 0.55)}},
         {"timestamp": 1.0, "landmarks": {
             "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
-            "leftWrist": _lm(0.55, 0.50)}},
-        {"timestamp": 2.0, "landmarks": {
-            "leftShoulder": _lm(0.42, 0.35), "rightShoulder": _lm(0.58, 0.35),
-            "leftWrist": _lm(0.40, 0.56)}},
+            "leftWrist": _lm(0.51, 0.55), "rightWrist": _lm(0.55, 0.55)}},
     ]
     data = _post(_req("skip_book", frames))
     assert data["success"] is False
-    assert data["reasonCode"] == "BOOK_NOT_TURNED"
+    assert data["reasonCode"] == "MOVEMENT_TOO_SMALL"
 
 
 # --- receive_seed (두 손 모아 어깨 위) ---

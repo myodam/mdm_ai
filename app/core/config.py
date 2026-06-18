@@ -60,14 +60,12 @@ OPEN_GOURD_SAME_DIRECTION_COUNT: int = _get_int(
     "OPEN_GOURD_SAME_DIRECTION_COUNT", 2  # 두 손이 같은 방향으로 움직인 구간 횟수
 )
 
-# Scene 0. skip_book (책 넘기기: 왼손이 오른쪽으로 한 번 곡선 스윕)
-SKIP_BOOK_NET_X_THRESHOLD: float = _get_float("SKIP_BOOK_NET_X_THRESHOLD", 0.20)
-SKIP_BOOK_X_MOVEMENT_THRESHOLD: float = _get_float(
-    "SKIP_BOOK_X_MOVEMENT_THRESHOLD", 0.25
+# Scene 0. skip_book (책 넘기기: 양손 중 더 크게 움직인 손이 좌우로 충분히 쓸기)
+# 방향은 강제하지 않음(미러링/라벨 스왑 대응). first-last 가 아니라 전체 max-min 사용.
+SKIP_BOOK_X_RANGE_THRESHOLD: float = _get_float("SKIP_BOOK_X_RANGE_THRESHOLD", 0.12)
+SKIP_BOOK_MOVEMENT_THRESHOLD: float = _get_float(
+    "SKIP_BOOK_MOVEMENT_THRESHOLD", 0.15
 )
-SKIP_BOOK_DIRECTION_RATIO_THRESHOLD: float = _get_float(
-    "SKIP_BOOK_DIRECTION_RATIO_THRESHOLD", 0.6
-)
-SKIP_BOOK_ARC_THRESHOLD: float = _get_float("SKIP_BOOK_ARC_THRESHOLD", 0.05)
-# 미러링으로 화면 좌→우가 x 감소면 -1 로 두어 netX 부호를 뒤집는다.
+SKIP_BOOK_ARC_THRESHOLD: float = _get_float("SKIP_BOOK_ARC_THRESHOLD", 0.03)
+# 방향 옵션(현재 미사용, 추후 방향을 다시 켤 때를 위해 보존). 화면 좌→우가 x 감소면 -1.
 SKIP_BOOK_DIRECTION_SIGN: float = _get_float("SKIP_BOOK_DIRECTION_SIGN", 1.0)

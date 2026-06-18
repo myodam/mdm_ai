@@ -26,17 +26,18 @@ uv run pytest tests/test_receive_seed.py -v   # 개별
 
 | 구분 | 값 |
 |---|---|
-| 전체 테스트 | **52** |
-| 통과 | **52** |
+| 전체 테스트 | **53** |
+| 통과 | **53** |
 | 실패 | **0** |
 | 경고 | 1 (StarletteDeprecationWarning — TestClient/httpx, 동작 무관) |
 
 ```
-======================== 52 passed, 1 warning in 0.26s =========================
+======================== 53 passed, 1 warning in 0.21s =========================
 ```
 
 > 변경 이력: storyId/sceneId 제거(42→41) → skip_book 추가(41→50)
-> → skip_book/receive_seed/open_gourd 판정 기준 개편(동작 재정의)으로 detector 테스트 재작성(50→52).
+> → 3개 미션 판정 기준 개편(50→52)
+> → skip_book 을 "양손 중 더 큰 손 자동 선택 + 방향 비강제"로 재개편(실제 캡처 실패 대응, 52→53).
 
 ## 4. 테스트 케이스 목록 / 결과
 
@@ -62,16 +63,17 @@ uv run pytest tests/test_receive_seed.py -v   # 개별
 | clamp_score | PASS |
 | is_success | PASS |
 
-### tests/test_skip_book.py (7) — scene_000 (왼손 오른쪽으로 한 번 곡선 스윕)
+### tests/test_skip_book.py (8) — scene_000 (한 손 자동 선택, 방향 비강제)
 | 케이스 | 기대 | 결과 |
 |---|---|---|
-| 왼→오른쪽 스윕 | MISSION_SUCCESS | PASS |
-| 왼쪽 방향(반대) | BOOK_NOT_TURNED | PASS |
-| 지그재그(방향성 부족) | BOOK_NOT_TURNED | PASS |
+| 왼손 좌우 스윕 | MISSION_SUCCESS | PASS |
+| x 감소 방향(미러링)도 성공 | MISSION_SUCCESS | PASS |
+| 왼손 고정·오른손이 움직임 → 오른손 자동선택 | MISSION_SUCCESS | PASS |
 | 거의 정지 | MOVEMENT_TOO_SMALL | PASS |
-| visible 손목 < 2프레임 | HAND_NOT_VISIBLE | PASS |
-| 어깨 미감지 | USER_NOT_DETECTED | PASS |
-| 미러링(SIGN=-1) 시 x감소 성공 | MISSION_SUCCESS | PASS |
+| 좁은 폭 떨기 | BOOK_NOT_TURNED | PASS |
+| yRange 0 이어도 가로 스윕이면 성공 | MISSION_SUCCESS | PASS |
+| 손목 미제공(visible<2) | HAND_NOT_VISIBLE | PASS |
+| 손목 visibility 낮아 전부 필터 | HAND_NOT_VISIBLE | PASS |
 
 ### tests/test_receive_seed.py (7) — scene_002 (두 손 모아 어깨 위)
 | 케이스 | 기대 | 결과 |
@@ -108,7 +110,7 @@ uv run pytest tests/test_receive_seed.py -v   # 개별
 | 케이스 | 기대 | 결과 |
 |---|---|---|
 | skip_book 성공 | MISSION_SUCCESS | PASS |
-| skip_book 실패 | BOOK_NOT_TURNED | PASS |
+| skip_book 실패 | MOVEMENT_TOO_SMALL | PASS |
 | receive_seed 성공 | MISSION_SUCCESS | PASS |
 | receive_seed 실패 | HAND_NOT_RAISED | PASS |
 | protect_swallow 성공 | MISSION_SUCCESS | PASS |
