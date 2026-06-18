@@ -40,3 +40,30 @@ curl -X POST http://127.0.0.1:9000/internal/ai/missions/check \
 
 > `score` 숫자는 조금 달라도 정상. `success` 와 `reasonCode` 가 위와 같으면 통신 OK.
 > 응답에 `message / nextAction / nextSceneId / warningCode` 는 없습니다(백엔드가 생성).
+
+## 4. 에러 케이스 샘플 & 기대 응답
+
+백엔드가 errorCode 분기/메시지 매핑을 검증할 때 쓰는 고정 샘플입니다.
+모든 에러 응답은 `success: false`, `score: 0.0`, `reasonCode: null` 이고 `errorCode` 만 달라집니다.
+
+| 파일 | 상황 | 기대 errorCode |
+|---|---|---|
+| `error_invalid_pose_data.json` | poseFrames 가 비어 있음 | `INVALID_POSE_DATA` |
+| `error_hand_not_visible.json` | 어깨는 보이나 손목 visibility 미달 | `HAND_NOT_VISIBLE` |
+| `error_user_not_detected.json` | 주요 관절(어깨)이 거의 감지 안 됨 | `USER_NOT_DETECTED` |
+| `error_unknown_mission_type.json` | 지원하지 않는 missionType | `UNKNOWN_MISSION_TYPE` |
+
+예시 응답:
+```json
+{ "success": false, "score": 0.0, "reasonCode": null, "errorCode": "HAND_NOT_VISIBLE" }
+```
+
+```bash
+curl -X POST http://127.0.0.1:9000/internal/ai/missions/check \
+  -H "Content-Type: application/json" \
+  -d @samples/error_hand_not_visible.json
+```
+
+> 참고: `INVALID_POSE_DATA` / `UNKNOWN_MISSION_TYPE` 는 보통 백엔드가 AI 호출 전에 1차로 걸러내는 케이스이며,
+> AI 서버 단독으로도 동일하게 방어합니다. `MISSION_MISMATCH`(scene-mission 불일치)와 `AI_SERVER_ERROR` 는
+> 백엔드 영역이라 AI 서버는 반환하지 않습니다.

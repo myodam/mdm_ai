@@ -1,0 +1,6 @@
+{
+  "missionType": "receive_seed",
+  "captureDurationSec": 5,
+  "sampleFps": 5,
+  "poseFrames": []
+}
