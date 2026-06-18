@@ -1,6 +1,6 @@
 """Scene 1. 다친 제비 보호하기 - 두 손 모으기 판정.
 
-storyId: heungbu_nolbu / sceneId: scene_001 / missionType: protect_swallow
+missionType: protect_swallow  (참고: 흥부와 놀부 scene_001 — AI 는 missionType 만 사용)
 
 판정 기준 (자세형, bestFrame):
     handDistance = distance(leftWrist, rightWrist)

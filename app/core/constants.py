@@ -1,17 +1,9 @@
 """상수 정의.
 
 AI 서버는 사용자 메시지를 관리하지 않는다.
-storyId / sceneId / missionType / reasonCode / errorCode 와
-장면-미션 매핑만 상수로 관리한다.
+또한 storyId / sceneId 도 받지 않으며, scene-mission 매핑/검증은 백엔드 책임이다.
+따라서 missionType / reasonCode / errorCode 만 상수로 관리한다.
 """
-
-# --- Story ---
-STORY_HEUNGBU_NOLBU = "heungbu_nolbu"
-
-# --- Scene ---
-SCENE_001 = "scene_001"
-SCENE_002 = "scene_002"
-SCENE_003 = "scene_003"
 
 # --- Mission ---
 MISSION_PROTECT_SWALLOW = "protect_swallow"
@@ -29,21 +21,12 @@ REASON_MOVEMENT_TOO_SMALL = "MOVEMENT_TOO_SMALL"
 
 # --- errorCode (판정 자체가 불가능한 경우) ---
 # AI 서버가 직접 반환하는 것: USER_NOT_DETECTED / HAND_NOT_VISIBLE / INVALID_POSE_DATA
-# MISSION_MISMATCH 는 기본적으로 백엔드 담당이나, AI 서버에서도 방어적으로 사용 가능.
+# UNKNOWN_MISSION_TYPE 는 detector registry 에 없는 missionType 이 들어온 경우.
 # AI_SERVER_ERROR 는 백엔드가 AI 호출 실패를 감지했을 때 사용 (AI 서버가 직접 반환하지 않음).
 ERROR_USER_NOT_DETECTED = "USER_NOT_DETECTED"
 ERROR_HAND_NOT_VISIBLE = "HAND_NOT_VISIBLE"
 ERROR_INVALID_POSE_DATA = "INVALID_POSE_DATA"
-ERROR_MISSION_MISMATCH = "MISSION_MISMATCH"
-
-# --- 장면-미션 매핑 (storyId -> sceneId -> missionType) ---
-MISSION_BY_SCENE = {
-    STORY_HEUNGBU_NOLBU: {
-        SCENE_001: MISSION_PROTECT_SWALLOW,
-        SCENE_002: MISSION_RECEIVE_SEED,
-        SCENE_003: MISSION_OPEN_GOURD,
-    }
-}
+ERROR_UNKNOWN_MISSION_TYPE = "UNKNOWN_MISSION_TYPE"
 
 # --- 주요 랜드마크 이름 ---
 LEFT_SHOULDER = "leftShoulder"

@@ -41,7 +41,7 @@ class HandNotVisibleError(MissionError):
     error_code = constants.ERROR_HAND_NOT_VISIBLE
 
 
-class MissionMismatchError(MissionError):
-    """storyId / sceneId / missionType 조합이 맞지 않는 경우(방어적 검증)."""
+class UnknownMissionTypeError(MissionError):
+    """AI 서버가 지원하지 않는 missionType 이 들어온 경우."""
 
-    error_code = constants.ERROR_MISSION_MISMATCH
+    error_code = constants.ERROR_UNKNOWN_MISSION_TYPE

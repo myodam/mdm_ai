@@ -1,6 +1,6 @@
 """Scene 2. 박씨 받기 - 한 손 들기 판정.
 
-storyId: heungbu_nolbu / sceneId: scene_002 / missionType: receive_seed
+missionType: receive_seed  (참고: 흥부와 놀부 scene_002 — AI 는 missionType 만 사용)
 
 판정 기준 (MediaPipe 는 y 가 작을수록 위쪽):
     leftHandRaised  = leftWrist.y  < leftShoulder.y  - margin

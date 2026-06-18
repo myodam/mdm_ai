@@ -8,8 +8,6 @@ from app.schemas.mission_schema import MissionCheckRequest, MissionCheckResponse
 
 def _valid_request_dict() -> dict:
     return {
-        "storyId": "heungbu_nolbu",
-        "sceneId": "scene_002",
         "missionType": "receive_seed",
         "captureDurationSec": 5,
         "sampleFps": 5,
@@ -29,8 +27,6 @@ def _valid_request_dict() -> dict:
 
 def test_valid_request_passes_and_maps_camel_to_snake():
     req = MissionCheckRequest.model_validate(_valid_request_dict())
-    assert req.story_id == "heungbu_nolbu"
-    assert req.scene_id == "scene_002"
     assert req.mission_type == "receive_seed"
     assert req.capture_duration_sec == 5
     assert req.sample_fps == 5
@@ -42,7 +38,7 @@ def test_valid_request_passes_and_maps_camel_to_snake():
 
 def test_missing_required_field_raises_validation_error():
     data = _valid_request_dict()
-    del data["sceneId"]
+    del data["missionType"]
     with pytest.raises(ValidationError):
         MissionCheckRequest.model_validate(data)
 

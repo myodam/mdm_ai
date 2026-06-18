@@ -2,12 +2,12 @@
 
 라우터와 detector 사이에서 다음을 담당한다.
 1. poseFrames 유효성 검사 (비어 있으면 INVALID_POSE_DATA)
-2. storyId / sceneId / missionType 조합 방어적 검증 (불일치 시 MISSION_MISMATCH)
-3. missionType 에 맞는 detector 선택 및 실행
-4. detector 결과(MissionCheckResponse) 반환
+2. missionType 에 맞는 detector 선택 (없으면 UNKNOWN_MISSION_TYPE)
+3. detector 실행 및 결과(MissionCheckResponse) 반환
 
-MISSION_MISMATCH 1차 검증은 백엔드 담당이지만, AI 서버에서도 방어적으로 확인한다.
-사용자 message / nextAction / nextSceneId 는 생성하지 않는다.
+AI 서버는 missionType + poseFrames 만으로 판정한다.
+storyId / sceneId 는 받지 않으며, scene-mission 매핑/검증은 백엔드 책임이다.
+사용자 message / nextAction / nextSceneId 도 생성하지 않는다.
 """
 
 from __future__ import annotations
@@ -33,13 +33,6 @@ DETECTOR_REGISTRY: dict[str, DetectFn] = {
 }
 
 
-def _is_valid_combination(story_id: str, scene_id: str, mission_type: str) -> bool:
-    scenes = constants.MISSION_BY_SCENE.get(story_id)
-    if scenes is None:
-        return False
-    return scenes.get(scene_id) == mission_type
-
-
 def check_mission(request: MissionCheckRequest) -> MissionCheckResponse:
     # 1. poseFrames 유효성
     if not request.pose_frames:
@@ -47,21 +40,15 @@ def check_mission(request: MissionCheckRequest) -> MissionCheckResponse:
             success=False, score=0.0, error_code=constants.ERROR_INVALID_POSE_DATA
         )
 
-    # 2. storyId / sceneId / missionType 조합 방어적 검증
-    if not _is_valid_combination(
-        request.story_id, request.scene_id, request.mission_type
-    ):
-        return MissionCheckResponse(
-            success=False, score=0.0, error_code=constants.ERROR_MISSION_MISMATCH
-        )
-
-    # 3. detector 선택
+    # 2. missionType 기준 detector 선택
     detect = DETECTOR_REGISTRY.get(request.mission_type)
     if detect is None:
-        # 매핑은 맞지만 아직 미구현 missionType 등 → 방어적으로 MISSION_MISMATCH
+        # AI 서버가 지원하지 않는 missionType
         return MissionCheckResponse(
-            success=False, score=0.0, error_code=constants.ERROR_MISSION_MISMATCH
+            success=False,
+            score=0.0,
+            error_code=constants.ERROR_UNKNOWN_MISSION_TYPE,
         )
 
-    # 4. detector 실행
+    # 3. detector 실행
     return detect(request.pose_frames)

@@ -1,6 +1,6 @@
 """Scene 3. 박 타기 - 양팔 크게 벌리기 / 휘두르기 판정.
 
-storyId: heungbu_nolbu / sceneId: scene_003 / missionType: open_gourd
+missionType: open_gourd  (참고: 흥부와 놀부 scene_003 — AI 는 missionType 만 사용)
 
 기본(1안, 자세형, bestFrame):
     shoulderWidth = distance(leftShoulder, rightShoulder)
