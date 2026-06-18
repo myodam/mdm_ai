@@ -27,6 +27,7 @@ errorCode 우선순위:
 
 from __future__ import annotations
 
+import logging
 from typing import Sequence
 
 from app.core import config, constants
@@ -35,6 +36,8 @@ from app.schemas.pose_schema import PoseFrame
 from app.utils.geometry import calculate_total_movement
 from app.utils.pose_utils import get_landmark, is_visible
 from app.utils.score_utils import clamp_score, is_success
+
+logger = logging.getLogger("ai.detector.skip_book")
 
 _X_SCALE = 1.5
 _MOVE_SCALE = 1.5
@@ -91,6 +94,19 @@ def detect(
         ) * _ARC_SCALE
         components.append(arc_score)
     score = clamp_score(min(components))
+
+    logger.debug(
+        "skip_book visibleFrames=%d xRange=%.3f movement=%.3f yRange=%.3f "
+        "xScore=%.2f movementScore=%.2f finalScore=%.2f require_arc=%s",
+        len(wrists),
+        x_range,
+        movement,
+        y_range,
+        x_score,
+        move_score,
+        score,
+        require_arc,
+    )
 
     if is_success(score):
         return MissionCheckResponse(

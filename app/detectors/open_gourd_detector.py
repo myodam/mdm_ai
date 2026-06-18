@@ -25,6 +25,7 @@ errorCode 우선순위:
 
 from __future__ import annotations
 
+import logging
 from typing import Sequence
 
 from app.core import config, constants
@@ -34,6 +35,8 @@ from app.utils.geometry import calculate_distance, calculate_total_movement
 from app.utils.pose_utils import get_landmark, is_visible
 from app.utils.score_utils import clamp_score, is_success
 
+logger = logging.getLogger("ai.detector.open_gourd")
+
 _SCALE = 0.5  # ratio 가 임계값일 때 점수 0.7 이 되도록 하는 기울기
 
 
@@ -41,8 +44,8 @@ def _any_visible(pose_frames: Sequence[PoseFrame], name: str) -> bool:
     return any(is_visible(get_landmark(f, name)) for f in pose_frames)
 
 
-def _frame_pose_score(frame: PoseFrame) -> float | None:
-    """양손목/양어깨가 모두 보이면 자세 점수 반환, 아니면 None.
+def _frame_pose_metrics(frame: PoseFrame) -> tuple[float, float, float] | None:
+    """양손목/양어깨가 모두 보이면 (score, wrist_width, shoulder_width) 반환, 아니면 None.
 
     좌우 손이 어깨 바깥으로 벌어지지 않았으면(orientation 실패) 0.7 미만으로 제한.
     """
@@ -56,7 +59,7 @@ def _frame_pose_score(frame: PoseFrame) -> float | None:
     shoulder_width = calculate_distance(ls, rs)
     wrist_width = calculate_distance(lw, rw)
     if shoulder_width <= 0:
-        return 0.0
+        return 0.0, wrist_width, shoulder_width
     ratio = wrist_width / shoulder_width
 
     score = clamp_score(
@@ -68,7 +71,7 @@ def _frame_pose_score(frame: PoseFrame) -> float | None:
     orientation_ok = lw.x < ls.x and rw.x > rs.x
     if not orientation_ok:
         score = min(score, config.SUCCESS_THRESHOLD - 0.01)
-    return score
+    return score, wrist_width, shoulder_width
 
 
 def detect(
@@ -82,18 +85,32 @@ def detect(
             success=False, score=0.0, error_code=constants.ERROR_USER_NOT_DETECTED
         )
 
-    best_score = None
+    best = None  # (score, wrist_width, shoulder_width)
     for frame in pose_frames:
-        score = _frame_pose_score(frame)
-        if score is None:
+        metrics = _frame_pose_metrics(frame)
+        if metrics is None:
             continue
-        if best_score is None or score > best_score:
-            best_score = score
+        if best is None or metrics[0] > best[0]:
+            best = metrics
 
-    if best_score is None:
+    if best is None:
         return MissionCheckResponse(
             success=False, score=0.0, error_code=constants.ERROR_HAND_NOT_VISIBLE
         )
+
+    best_score, wrist_width, shoulder_width = best
+    movement = calculate_total_movement(
+        pose_frames, constants.LEFT_WRIST
+    ) + calculate_total_movement(pose_frames, constants.RIGHT_WRIST)
+    logger.debug(
+        "open_gourd wristWidth=%.3f shoulderWidth=%.3f movement=%.3f score=%.2f "
+        "require_movement=%s",
+        wrist_width,
+        shoulder_width,
+        movement,
+        best_score,
+        require_movement,
+    )
 
     # 1. 자세(양팔 벌리기) 판정
     if not is_success(best_score):
@@ -104,16 +121,12 @@ def detect(
         )
 
     # 2. 선택적 움직임 판정 (require_movement=True 일 때만)
-    if require_movement:
-        total_movement = calculate_total_movement(
-            pose_frames, constants.LEFT_WRIST
-        ) + calculate_total_movement(pose_frames, constants.RIGHT_WRIST)
-        if total_movement < config.OPEN_GOURD_MOVEMENT_THRESHOLD:
-            return MissionCheckResponse(
-                success=False,
-                score=best_score,
-                reason_code=constants.REASON_MOVEMENT_TOO_SMALL,
-            )
+    if require_movement and movement < config.OPEN_GOURD_MOVEMENT_THRESHOLD:
+        return MissionCheckResponse(
+            success=False,
+            score=best_score,
+            reason_code=constants.REASON_MOVEMENT_TOO_SMALL,
+        )
 
     return MissionCheckResponse(
         success=True, score=best_score, reason_code=constants.REASON_MISSION_SUCCESS

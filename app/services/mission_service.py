@@ -12,6 +12,7 @@ storyId / sceneId 는 받지 않으며, scene-mission 매핑/검증은 백엔드
 
 from __future__ import annotations
 
+import logging
 from typing import Callable, Sequence
 
 from app.core import constants
@@ -23,6 +24,8 @@ from app.detectors import (
 )
 from app.schemas.mission_schema import MissionCheckRequest, MissionCheckResponse
 from app.schemas.pose_schema import PoseFrame
+
+logger = logging.getLogger("ai.mission")
 
 # missionType -> detector.detect 함수
 DetectFn = Callable[[Sequence[PoseFrame]], MissionCheckResponse]
@@ -36,6 +39,25 @@ DETECTOR_REGISTRY: dict[str, DetectFn] = {
 
 
 def check_mission(request: MissionCheckRequest) -> MissionCheckResponse:
+    result = _judge(request)
+
+    # 판정 요약 로그 (한 곳에서만). errorCode 가 있으면 WARNING, 아니면 INFO.
+    # success=false + reasonCode(동작 부족)는 정상 게임플레이이므로 INFO.
+    level = logging.WARNING if result.error_code else logging.INFO
+    logger.log(
+        level,
+        "judge mission=%s frames=%d -> success=%s reason=%s error=%s score=%.2f",
+        request.mission_type,
+        len(request.pose_frames),
+        result.success,
+        result.reason_code,
+        result.error_code,
+        result.score,
+    )
+    return result
+
+
+def _judge(request: MissionCheckRequest) -> MissionCheckResponse:
     # 1. poseFrames 유효성
     if not request.pose_frames:
         return MissionCheckResponse(

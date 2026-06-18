@@ -11,15 +11,30 @@
 
 [ 요청이 처리되는 큰 흐름 ]
   uvicorn → main.py(app) → mission_router → mission_service → detector → 응답 직렬화
+
+[ 로깅 ]
+  - 통신 로그(미들웨어): method/path/status/duration + request_id
+  - 판정 요약(service) / 계산 중간값(detector, DEBUG)
+  - LOG_LEVEL(.env) 로 레벨 제어, 기본 INFO
+  - access 로그 중복을 피하려면 `--no-access-log` 로 실행
 """
 
-from fastapi import FastAPI
+import logging
+import time
+
+from fastapi import FastAPI, Request
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.mission_router import router as mission_router
+from app.core.logging_config import get_request_id, set_request_id, setup_logging
 
-# FastAPI() 객체 = 우리 웹 애플리케이션 본체.
-# title/description/version 은 자동 생성되는 API 문서(/docs, /openapi.json)에 표시된다.
+# 앱 구동 시 로깅을 가장 먼저 설정한다.
+setup_logging()
+logger = logging.getLogger("ai.api")
+
 app = FastAPI(
     title="몸으로 넘기는 전래동화 - AI Server",
     description="MediaPipe poseFrames 기반 동작 판정 전용 FastAPI 서버",
@@ -31,14 +46,61 @@ app = FastAPI(
 # 해커톤 MVP 라 백엔드 내부 호출 전용이므로 모든 출처를 허용한다(운영 시엔 제한 권장).
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # 허용할 출처 목록. ["*"] = 전부 허용
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],   # 허용할 HTTP 메서드(GET/POST...)
-    allow_headers=["*"],   # 허용할 요청 헤더
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# [라우터 등록] 동작 판정 엔드포인트들은 app/api/mission_router.py 에 모아두고,
-# include_router 로 앱에 붙인다. main.py 가 비대해지지 않도록 경로 정의를 분리한 것.
+
+@app.middleware("http")
+async def request_context(request: Request, call_next):
+    """요청마다 request_id 를 세팅하고 통신 로그(상태/소요시간)를 남긴다.
+
+    - X-Request-ID 헤더가 있으면 재사용, 없으면 자동 생성
+    - 응답에도 X-Request-ID 를 되돌려줘 백엔드가 로그를 대조할 수 있게 함
+    - /health 는 INFO 통신 로그에서 제외(폴링 노이즈 방지)
+    """
+    request_id = set_request_id(request.headers.get("X-Request-ID"))
+    is_health = request.url.path == "/health"
+    start = time.perf_counter()
+
+    if not is_health:
+        logger.debug("→ %s %s", request.method, request.url.path)
+
+    response = await call_next(request)
+
+    if not is_health:
+        duration_ms = (time.perf_counter() - start) * 1000
+        logger.info(
+            "← %s %s %s (%.0fms)",
+            response.status_code,
+            request.method,
+            request.url.path,
+            duration_ms,
+        )
+    response.headers["X-Request-ID"] = request_id
+    return response
+
+
+@app.exception_handler(RequestValidationError)
+async def on_validation_error(request: Request, exc: RequestValidationError):
+    """요청 형식 오류(422). 어떤 필드가 왜 틀렸는지 ERROR 로 남기고 기본 응답을 반환."""
+    logger.error("422 validation on %s: %s", request.url.path, exc.errors())
+    return await request_validation_exception_handler(request, exc)
+
+
+@app.exception_handler(Exception)
+async def on_unhandled_error(request: Request, exc: Exception):
+    """예상치 못한 내부 오류(500). 스택트레이스를 남기고 깔끔한 본문을 반환."""
+    logger.exception("500 unhandled on %s", request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "internal server error"},
+        headers={"X-Request-ID": get_request_id()},
+    )
+
+
 app.include_router(mission_router)
 
 

@@ -14,6 +14,7 @@ errorCode 우선순위:
 
 from __future__ import annotations
 
+import logging
 from typing import Sequence
 
 from app.core import config, constants
@@ -21,6 +22,8 @@ from app.schemas.mission_schema import MissionCheckResponse
 from app.schemas.pose_schema import PoseFrame
 from app.utils.pose_utils import get_landmark, is_visible
 from app.utils.score_utils import clamp_score, is_success
+
+logger = logging.getLogger("ai.detector.receive_seed")
 
 _SIDES = (
     (constants.LEFT_WRIST, constants.LEFT_SHOULDER),
@@ -73,6 +76,13 @@ def detect(pose_frames: Sequence[PoseFrame]) -> MissionCheckResponse:
     # raise == margin 에서 정확히 임계값(0.7)이 되도록 매핑 → is_success 와 일치
     score = clamp_score(config.SUCCESS_THRESHOLD + (best_raise - margin) * 1.5)
     success = is_success(score)
+    logger.debug(
+        "receive_seed bestRaise=%.3f margin=%.3f raised=%s score=%.2f",
+        best_raise,
+        margin,
+        success,
+        score,
+    )
     reason_code = (
         constants.REASON_MISSION_SUCCESS
         if success
